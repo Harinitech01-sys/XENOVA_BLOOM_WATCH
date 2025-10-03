@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="welcome">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="BloomWatch Logo" class="logo">
+    <h2>Welcome to BloomWatch</h2>
+    <p>Observe, visualize, and analyze global plant blooming events using powerful satellite datasets, all in your browser.</p>
+    <a class="btn" href="{{ url_for('dashboard') }}">Go to Dashboard</a>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Bloom Dashboard</h2>
+<div class="dashboard-section">
+    {% include 'components/map_container.html' %}
+    <div id="chart-div"></div>
+</div>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

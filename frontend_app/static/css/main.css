@@ -1,0 +1,9 @@
+body { font-family: Arial, sans-serif; margin: 0; background: #f8faf6;}
+.navbar { background: #299865; padding: 12px 32px;}
+.navbar a { color: #fff; margin-right: 20px; text-decoration: none; font-weight: 600; }
+.container { max-width: 900px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 10px; }
+.logo { height: 72px; margin-bottom: 18px; }
+.welcome { text-align: center; margin-top: 60px; }
+.btn { background: #299865; color: #fff; padding: 12px 28px; text-decoration: none; border-radius: 5px;}
+.dashboard-section { display: flex; flex-direction: column; gap: 24px;}
+h2 { color: #299865;}
