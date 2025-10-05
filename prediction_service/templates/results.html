@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloom Prediction Results - BloomWatch</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .results-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 1500px;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #2E7D32;
+        }
+        
+        .content-wrapper {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .info-panel {
+            flex: 1;
+        }
+        
+        .map-panel {
+            flex: 1;
+        }
+        
+        #map {
+            height: 550px !important;
+            width: 100% !important;
+            border-radius: 15px;
+            border: 3px solid #4CAF50;
+            background-color: #f0f0f0;
+            z-index: 1;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .leaflet-container {
+            background-color: #f0f0f0;
+        }
+        
+        .leaflet-control-zoom {
+            border: 2px solid #4CAF50 !important;
+        }
+        
+        .info-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #4CAF50;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .info-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2E7D32;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .info-item {
+            margin: 12px 0;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        
+        .info-label {
+            font-weight: 700;
+            color: #333;
+            display: inline-block;
+            min-width: 180px;
+        }
+        
+        .info-value {
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .bloom-status {
+            font-size: 1.4em;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 25px;
+            display: inline-block;
+        }
+        
+        .bloom-yes { 
+            color: #155724; 
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 2px solid #28a745;
+        }
+        .bloom-no { 
+            color: #721c24; 
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            border: 2px solid #dc3545;
+        }
+        .bloom-partial { 
+            color: #856404; 
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #fd7e14;
+        }
+        .bloom-poor { 
+            color: #664d03; 
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #ffc107;
+        }
+        
+        .ndvi-excellent { color: #155724; background: #d4edda; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .ndvi-good { color: #0f5132; background: #d1e7dd; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .ndvi-moderate { color: #664d03; background: #fff3cd; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .ndvi-poor { color: #842029; background: #f8d7da; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .ndvi-very-poor { color: #721c24; background: #f5c6cb; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #e8f5e8, #f3e5f5);
+            border: 4px solid #4CAF50;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-title {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #2E7D32;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .summary-item {
+            margin: 15px 0;
+            font-size: 1.2em;
+        }
+
+        .map-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2E7D32;
+            font-size: 1.4em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin-top: 40px;
+            gap: 20px;
+        }
+        
+        .btn-custom {
+            padding: 15px 35px;
+            border-radius: 30px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 8px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-new {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border: none;
+            color: white;
+        }
+        
+        .btn-pdf {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            border: none;
+            color: white;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .practical-section {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #2196F3;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .advice-item {
+            margin: 18px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            border-left: 4px solid #1976D2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .advice-title {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .analysis-section {
+            background: linear-gradient(135deg, #fff8e1, #f3e5f5);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #FF9800;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .technical-section {
+            background: linear-gradient(135deg, #f1f8e9, #e8f5e8);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #8BC34A;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .location-section {
+            background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #E91E63;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .environmental-section {
+            background: linear-gradient(135deg, #e0f2f1, #b2dfdb);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #009688;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .seasonal-section {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 6px solid #FF5722;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #e1f5fe, #b3e5fc);
+            border: 2px solid #03A9F4;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .metric-box {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 1200px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+            
+            .info-panel, .map-panel {
+                flex: none;
+            }
+            
+            #map {
+                height: 450px !important;
+            }
+        }
+
+        .footer-info {
+            background: linear-gradient(135deg, #263238, #37474f);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .footer-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .footer-subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .footer-credits {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <div class="header">
+            <h1>🌸 Comprehensive Bloom Prediction Report</h1>
+            <p style="font-size: 1.2em; color: #666; margin-top: 10px;">
+                Advanced Satellite-Based Agricultural & Environmental Intelligence
+            </p>
+        </div>
+
+        <!-- Main content with info and map side by side -->
+        <div class="content-wrapper">
+            <!-- Information Panel -->
+            <div class="info-panel">
+                <!-- Quick Summary Box -->
+                <div class="summary-box">
+                    <div class="summary-title">🌸 Executive Summary</div>
+                    <div class="summary-item">
+                        <span class="info-label">Target Region:</span> 
+                        <strong style="color: #2E7D32;">{{ prediction.region_name }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span class="info-label">🌡️ Climate Classification:</span> 
+                        <strong>{{ prediction.climate_type }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span class="info-label">📅 Analysis Date:</span> 
+                        <strong>{{ prediction.date }}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span class="info-label">🌸 Bloom Forecast:</span> 
+                        <span class="bloom-status 
+                            {% if 'YES' in prediction.bloom_status %}bloom-yes
+                            {% elif 'NO' in prediction.bloom_status %}bloom-no
+                            {% elif 'PARTIAL' in prediction.bloom_status %}bloom-partial
+                            {% else %}bloom-poor{% endif %}">
+                            {{ prediction.bloom_status }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="info-label">📊 Prediction Confidence:</span> 
+                        <strong style="color: #1976D2;">{{ "%.1f"|format(prediction.probability * 100) }}%</strong> 
+                        ({{ prediction.confidence }} confidence)
+                    </div>
+                </div>
+                
+                <!-- Key Metrics Box -->
+                <div class="highlight-box">
+                    <h5 style="color: #1976D2; margin-bottom: 15px;">🎯 Key Performance Indicators</h5>
+                    <div class="metric-box">
+                        <div class="metric-value">{{ "%.1f"|format(prediction.probability * 100) }}%</div>
+                        <div class="metric-label">Bloom Probability</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">{{ prediction.temperature }}°</div>
+                        <div class="metric-label">Temperature (°C)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">{{ prediction.humidity }}%</div>
+                        <div class="metric-label">Humidity</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value">{{ prediction.ndvi }}</div>
+                        <div class="metric-label">NDVI Index</div>
+                    </div>
+                </div>
+                
+                <!-- Environmental Data Section -->
+                <div class="environmental-section">
+                    <div class="info-title">🛰️ Satellite Environmental Analysis</div>
+                    <div class="info-item">
+                        <span class="info-label">NDVI (Vegetation Index):</span> 
+                        <span class="info-value">{{ prediction.ndvi }}</span>
+                        <span class="ndvi-{{ prediction.ndvi_description.replace(' ', '-') }}">
+                            {{ prediction.ndvi_description }} condition
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Surface Temperature:</span> 
+                        <span class="info-value">{{ prediction.temperature }}°C</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Precipitation Estimate:</span> 
+                        <span class="info-value">{{ prediction.precipitation }}mm</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Atmospheric Humidity:</span> 
+                        <span class="info-value">{{ prediction.humidity }}%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data Source:</span> 
+                        <span class="info-value">{{ prediction.satellite_source }} Satellite</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Acquisition Timestamp:</span> 
+                        <span class="info-value">{{ prediction.analysis_date }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Map Panel -->
+            <div class="map-panel">
+                <div class="map-title">🗺️ {{ prediction.region_name }} - Interactive Bloom Intensity Map</div>
+                <div id="map"></div>
+            </div>
+        </div>
+        
+        <!-- Comprehensive Bloom Analysis -->
+        <div class="analysis-section">
+            <div class="info-title">📈 Detailed Bloom Forecasting Analysis</div>
+            <div class="info-item">
+                <span class="info-label">Bloom Intensity Classification:</span> 
+                <span class="info-value">{{ prediction.intensity }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Peak Bloom Probability:</span> 
+                <span class="info-value">{{ prediction.peak_likelihood }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Bloom Condition Assessment:</span> 
+                <span class="info-value">{{ prediction.peak_description }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Seasonal Pattern Analysis:</span> 
+                <span class="info-value">{{ prediction.season_description }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Current Growth Season:</span> 
+                <span class="info-value">{{ prediction.season }}</span>
+            </div>
+        </div>
+
+        <!-- Geographic & Climatic Information -->
+        <div class="location-section">
+            <div class="info-title">🌍 Geographic & Climatic Intelligence</div>
+            <div class="info-item">
+                <span class="info-label">Complete Location Identity:</span> 
+                <span class="info-value">{{ prediction.display_name or prediction.region_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Geographic Coordinates:</span> 
+                <span class="info-value">{{ prediction.coordinates }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Country/Territory:</span> 
+                <span class="info-value">{{ prediction.country }}</span>
+            </div>
+            {% if prediction.state %}
+            <div class="info-item">
+                <span class="info-label">State/Province/Region:</span> 
+                <span class="info-value">{{ prediction.state }}</span>
+            </div>
+            {% endif %}
+            {% if prediction.city %}
+            <div class="info-item">
+                <span class="info-label">City/Municipality:</span> 
+                <span class="info-value">{{ prediction.city }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">Climate Zone Description:</span> 
+                <span class="info-value">{{ prediction.climate_description }}</span>
+            </div>
+        </div>
+
+        <!-- Seasonal & Weather Intelligence -->
+        <div class="seasonal-section">
+            <div class="info-title">🌦️ Seasonal & Meteorological Intelligence</div>
+            <div class="info-item">
+                <span class="info-label">Current Season Phase:</span> 
+                <span class="info-value">{{ prediction.season }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Temperature Trend Analysis:</span> 
+                <span class="info-value">{{ prediction.temperature }}°C 
+                {% if prediction.temperature|float > 30 %}(Hot conditions)
+                {% elif prediction.temperature|float > 20 %}(Warm conditions)
+                {% elif prediction.temperature|float > 10 %}(Moderate conditions)
+                {% else %}(Cool conditions){% endif %}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Precipitation Pattern:</span> 
+                <span class="info-value">{{ prediction.precipitation }}mm 
+                {% if prediction.precipitation|float > 100 %}(High rainfall expected)
+                {% elif prediction.precipitation|float > 50 %}(Moderate rainfall)
+                {% elif prediction.precipitation|float > 20 %}(Light rainfall)
+                {% else %}(Minimal rainfall){% endif %}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Atmospheric Moisture Content:</span> 
+                <span class="info-value">{{ prediction.humidity }}% 
+                {% if prediction.humidity|float > 80 %}(Very humid)
+                {% elif prediction.humidity|float > 60 %}(Humid)
+                {% elif prediction.humidity|float > 40 %}(Moderate)
+                {% else %}(Dry conditions){% endif %}</span>
+            </div>
+        </div>
+
+        <!-- Ecological & Agricultural Intelligence -->
+        <div class="technical-section">
+            <div class="info-title">🌱 Ecological & Agricultural Intelligence</div>
+            <div class="info-item">
+                <span class="info-label">Primary Vegetation Classification:</span> 
+                <span class="info-value">{{ prediction.vegetation_type }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Soil Composition Analysis:</span> 
+                <span class="info-value">{{ prediction.soil_type }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Historical Rainfall Patterns:</span> 
+                <span class="info-value">{{ prediction.rainfall_pattern }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Vegetation Health Index (NDVI):</span> 
+                <span class="info-value">{{ prediction.ndvi }}</span> - 
+                <span class="ndvi-{{ prediction.ndvi_description.replace(' ', '-') }}">
+                    {{ prediction.ndvi_description|title }} vegetation health
+                </span>
+            </div>
+        </div>
+        
+        <!-- Expert Recommendations & Applications -->
+        <div class="practical-section">
+            <div class="info-title">💡 Expert Recommendations & Practical Applications</div>
+            
+            <div class="advice-item">
+                <div class="advice-title">🌾 Agricultural Strategy Recommendations:</div>
+                <div>{{ prediction.agriculture_advice }}</div>
+                <div style="margin-top: 8px; font-size: 0.9em; color: #666; font-style: italic;">
+                    Optimized for {{ prediction.climate_type }} climate conditions and {{ prediction.season }} growing season.
+                </div>
+            </div>
+            
+            <div class="advice-item">
+                <div class="advice-title">🌿 Environmental Conservation Guidelines:</div>
+                <div>{{ prediction.conservation_advice }}</div>
+                <div style="margin-top: 8px; font-size: 0.9em; color: #666; font-style: italic;">
+                    Based on current NDVI levels ({{ prediction.ndvi }}) and ecosystem health assessment.
+                </div>
+            </div>
+            
+            <div class="advice-item">
+                <div class="advice-title">🎒 Tourism & Recreation Planning:</div>
+                <div>{{ prediction.tourism_advice }}</div>
+                <div style="margin-top: 8px; font-size: 0.9em; color: #666; font-style: italic;">
+                    Seasonal recommendations for {{ prediction.season_description|lower }}.
+                </div>
+            </div>
+
+            <div class="advice-item">
+                <div class="advice-title">📊 Economic Impact Assessment:</div>
+                <div>
+                    {% if prediction.probability > 0.7 %}
+                    High bloom probability suggests strong economic potential for agriculture, tourism, and honey production. Optimal conditions for crop yield maximization and eco-tourism activities.
+                    {% elif prediction.probability > 0.4 %}
+                    Moderate bloom conditions indicate stable economic opportunities with potential for diversified agricultural practices and nature-based tourism.
+                    {% else %}
+                    Lower bloom probability recommends focus on drought-resistant economic activities, water conservation investments, and alternative land use strategies.
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="advice-item">
+                <div class="advice-title">⚠️ Risk Management & Mitigation:</div>
+                <div>
+                    {% if prediction.humidity|float > 80 and prediction.temperature|float > 25 %}
+                    High humidity and temperature levels may increase pest and disease risks. Implement preventive measures and monitoring systems.
+                    {% elif prediction.precipitation|float < 20 %}
+                    Low precipitation levels suggest drought risk. Consider water conservation strategies and drought-resistant crop varieties.
+                    {% else %}
+                    Current conditions present balanced risk profile. Standard agricultural and environmental management practices recommended.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical System Information -->
+        <div class="info-section">
+            <div class="info-title">🔧 Technical Analysis & System Information</div>
+            <div class="info-item">
+                <span class="info-label">AI Model Version:</span> 
+                <span class="info-value">{{ prediction.model_version }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Prediction Confidence Score:</span> 
+                <span class="info-value">{{ prediction.confidence_score }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Analysis Generation Time:</span> 
+                <span class="info-value">{{ prediction.analysis_date }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Primary Data Source:</span> 
+                <span class="info-value">{{ prediction.satellite_source }} Earth Observation Platform</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Processing Status:</span> 
+                <span class="info-value" style="color: #28a745; font-weight: bold;">{{ prediction.status|title }} ✅</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Data Quality Assessment:</span> 
+                <span class="info-value">High-resolution satellite imagery with 
+                {% if prediction.confidence == 'high' %}excellent{% elif prediction.confidence == 'medium' %}good{% else %}acceptable{% endif %} 
+                atmospheric conditions for optimal analysis accuracy.</span>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="/" class="btn btn-new btn-custom">
+                🔄 Generate New Prediction
+            </a>
+            <a href="/download_pdf" class="btn btn-pdf btn-custom">
+                📄 Download Comprehensive PDF Report
+            </a>
+            <button onclick="window.print()" class="btn btn-custom" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white;">
+                🖨️ Print Analysis Report
+            </button>
+        </div>
+        
+        <!-- Professional Footer -->
+        <div class="footer-info">
+            <div class="footer-title">🌸 BloomWatch Intelligence Platform</div>
+            <div class="footer-subtitle">Advanced Satellite-Based Agricultural & Environmental Intelligence System</div>
+            <div class="footer-subtitle">Powered by Machine Learning, Earth Observation Data & Climate Science</div>
+            <div class="footer-credits">
+                Generated automatically by BloomWatch AI • Data sources: NASA, ESA, NOAA • 
+                Analysis Date: {{ prediction.analysis_date }} • Model: {{ prediction.model_version }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <script>
+        // ONLY MAP SECTION CHANGED - Circular overlay style matching your reference
+        console.log('🗺️ Initializing circular overlay map...');
+        
+        var centerLat = {{ prediction.map_center_lat }};
+        var centerLng = {{ prediction.map_center_lng }};
+        var bloomProb = {{ prediction.probability }};
+        var regionBounds = {{ prediction.region_bounds | tojson }};
+        var regionName = "{{ prediction.region_name }}";
+
+        console.log('📍 Target:', regionName);
+        console.log('📍 Center:', centerLat, centerLng);
+        console.log('📊 Bloom Probability:', bloomProb);
+
+        // Initialize map
+        var map = L.map('map', {
+            center: [centerLat, centerLng],
+            zoom: {{ prediction.map_zoom }},
+            zoomControl: true,
+            attributionControl: true
+        });
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        console.log('✅ Map tiles loaded');
+
+        // Get bloom color - matching your reference
+        function getBloomColor(probability) {
+            if (probability >= 0.7) return '#4CAF50';      // Green for high bloom
+            if (probability >= 0.4) return '#FF9800';      // Orange for moderate bloom
+            if (probability >= 0.2) return '#FF5722';      // Red-orange for low bloom
+            return '#B71C1C';                              // Dark red for very low/no bloom
+        }
+
+        var bloomColor = getBloomColor(bloomProb);
+        console.log('🎨 Bloom color:', bloomColor);
+
+        // Calculate circle radius based on zoom level
+        function getCircleRadius(zoom) {
+            if (zoom >= 10) return 8000;   // 8km for cities
+            if (zoom >= 8) return 15000;   // 15km for regions
+            if (zoom >= 6) return 25000;   // 25km for states
+            return 40000;                  // 40km for countries
+        }
+
+        var mainRadius = getCircleRadius({{ prediction.map_zoom }});
+
+        // Create main colored circle (like in your reference image)
+        var mainCircle = L.circle([centerLat, centerLng], {
+            color: bloomColor,
+            fillColor: bloomColor,
+            fillOpacity: 0.4,
+            weight: 3,
+            opacity: 0.8,
+            radius: mainRadius
+        }).addTo(map);
+
+        // Create inner circle with higher opacity
+        var innerCircle = L.circle([centerLat, centerLng], {
+            color: bloomColor,
+            fillColor: bloomColor,
+            fillOpacity: 0.6,
+            weight: 2,
+            opacity: 0.9,
+            radius: mainRadius * 0.6
+        }).addTo(map);
+
+        // Create center marker (blue pin like in reference)
+        var centerMarker = L.marker([centerLat, centerLng], {
+            icon: L.icon({
+                iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">
+                        <path d="M15,0 C6.7,0 0,6.7 0,15 C0,25 15,40 15,40 S30,25 30,15 C30,6.7 23.3,0 15,0 Z" 
+                              fill="#2196F3" stroke="#fff" stroke-width="2"/>
+                        <circle cx="15" cy="15" r="6" fill="#fff"/>
+                    </svg>
+                `),
+                iconSize: [30, 40],
+                iconAnchor: [15, 40],
+                popupAnchor: [0, -40]
+            })
+        }).addTo(map);
+
+        // Create the popup exactly like your reference image
+        var popupContent = `
+            <div style="font-family: 'Segoe UI', sans-serif; min-width: 200px; text-align: left;">
+                <h6 style="margin: 0 0 15px 0; font-size: 1.1em; font-weight: 600; color: #333;">
+                    {{ prediction.region_name }}
+                </h6>
+                <div style="margin: 8px 0; display: flex; align-items: center;">
+                    <span style="color: #E91E63; margin-right: 8px;">🌸</span>
+                    <strong>Bloom Probability:</strong> 
+                    <span style="margin-left: 5px; font-weight: bold;">{{ "%.1f"|format(prediction.probability * 100) }}%</span>
+                </div>
+                <div style="margin: 8px 0; display: flex; align-items: center;">
+                    <span style="color: #FF9800; margin-right: 8px;">🌡️</span>
+                    <strong>Climate:</strong> 
+                    <span style="margin-left: 5px;">{{ prediction.climate_type }}</span>
+                </div>
+                <div style="margin: 8px 0; display: flex; align-items: center;">
+                    <span style="color: 
+                        {% if 'YES' in prediction.bloom_status %}#4CAF50
+                        {% elif 'NO' in prediction.bloom_status %}#F44336
+                        {% elif 'PARTIAL' in prediction.bloom_status %}#FF9800
+                        {% else %}#FF5722{% endif %}; margin-right: 8px;">📊</span>
+                    <strong>Status:</strong> 
+                    <span style="margin-left: 5px; font-weight: bold; color: 
+                        {% if 'YES' in prediction.bloom_status %}#4CAF50
+                        {% elif 'NO' in prediction.bloom_status %}#F44336
+                        {% elif 'PARTIAL' in prediction.bloom_status %}#FF9800
+                        {% else %}#FF5722{% endif %};">
+                        {{ prediction.bloom_status.replace('✅', '').replace('❌', '').replace('🟡', '').replace('⚠️', '').strip() }}
+                        {% if 'YES' in prediction.bloom_status %}✅
+                        {% elif 'NO' in prediction.bloom_status %}❌
+                        {% elif 'PARTIAL' in prediction.bloom_status %}🟡
+                        {% else %}⚠️{% endif %}
+                    </span>
+                </div>
+            </div>
+        `;
+
+        // Bind popup to center marker
+        centerMarker.bindPopup(popupContent, {
+            maxWidth: 300,
+            className: 'custom-popup'
+        });
+
+        // Auto-open the popup (like in your reference)
+        setTimeout(function() {
+            centerMarker.openPopup();
+        }, 1000);
+
+        // Add additional bloom zones as smaller circles (optional, for more detail)
+        var additionalZones = 4;
+        for (var i = 0; i < additionalZones; i++) {
+            var angle = (i * 90) * Math.PI / 180; // 90 degrees apart
+            var distance = 0.015; // Small offset from center
+            var zoneLat = centerLat + Math.cos(angle) * distance;
+            var zoneLng = centerLng + Math.sin(angle) * distance;
+            
+            // Vary the bloom probability slightly
+            var zoneProb = Math.max(0.1, Math.min(0.9, bloomProb + (Math.random() - 0.5) * 0.2));
+            var zoneColor = getBloomColor(zoneProb);
+            
+            var smallCircle = L.circle([zoneLat, zoneLng], {
+                color: zoneColor,
+                fillColor: zoneColor,
+                fillOpacity: 0.5,
+                weight: 2,
+                radius: mainRadius * 0.3
+            }).addTo(map);
+            
+            // Add popup to small zones
+            var zonePopupContent = `
+                <div style="font-family: 'Segoe UI', sans-serif; text-align: center;">
+                    <h6 style="color: #2E7D32; margin-bottom: 10px;">Zone ${i+1}</h6>
+                    <p><strong>🌸 Bloom:</strong> ${(zoneProb * 100).toFixed(1)}%</p>
+                    <p><strong>🌡️ Climate:</strong> {{ prediction.climate_type }}</p>
+                </div>
+            `;
+            
+            smallCircle.bindPopup(zonePopupContent);
+        }
+
+        // Fit map to show the circles properly
+        setTimeout(function() {
+            var group = new L.featureGroup([mainCircle, centerMarker]);
+            map.fitBounds(group.getBounds().pad(0.1));
+            
+            // Ensure minimum zoom level
+            if (map.getZoom() > {{ prediction.map_zoom + 2 }}) {
+                map.setZoom({{ prediction.map_zoom + 1 }});
+            }
+            
+            console.log('✅ Map fitted to circular overlays');
+        }, 500);
+
+        // Add custom CSS for popup styling (matching your reference)
+        var style = document.createElement('style');
+        style.textContent = `
+            .custom-popup .leaflet-popup-content-wrapper {
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            
+            .custom-popup .leaflet-popup-content {
+                margin: 15px 18px;
+                line-height: 1.4;
+            }
+            
+            .custom-popup .leaflet-popup-close-button {
+                color: #666 !important;
+                font-size: 18px !important;
+                font-weight: bold !important;
+                padding: 2px 6px !important;
+            }
+            
+            .custom-popup .leaflet-popup-tip {
+                background: white;
+                border: 1px solid #ccc;
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('🎉 Circular overlay map initialization complete');
+        console.log('📍 Region:', regionName);
+        console.log('🎨 Main color:', bloomColor);
+        console.log('📊 Probability:', (bloomProb * 100).toFixed(1) + '%');
+
+        // Final map adjustments
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 1500);
+    </script>
+</body>
+</html>

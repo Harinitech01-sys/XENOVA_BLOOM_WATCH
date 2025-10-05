@@ -1,0 +1,25 @@
+<!-- templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BloomWatch{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>Satellite Bloom Predictions</h2>
+    
+    <!-- Satellite data display -->
+    <div class="satellite-data">
+        {% for prediction in predictions %}
+        <div class="prediction-card">
+            <h3>{{ prediction.location }}</h3>
+            <p>Bloom Probability: {{ prediction.probability }}%</p>
+            <p>Date: {{ prediction.date }}</p>
+            <p>Species: {{ prediction.species }}</p>
+            <div class="status-indicator {{ 'high' if prediction.probability > 70 else 'medium' if prediction.probability > 40 else 'low' }}">
+                {{ 'High Risk' if prediction.probability > 70 else 'Medium Risk' if prediction.probability > 40 else 'Low Risk' }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
